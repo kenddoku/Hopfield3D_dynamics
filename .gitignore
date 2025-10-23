@@ -1,0 +1,7 @@
+data/**
+parameters/wparams/**
+logs/**
+errors/**
+figures/**
+supp_files/**
+working/**
