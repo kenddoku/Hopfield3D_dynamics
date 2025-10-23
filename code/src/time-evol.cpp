@@ -152,9 +152,70 @@ public:
 
     // Method that computes the states of all three neurons in n_iter steps, optionally saves all these states to file (saveToFile=true)
     // and returns a tuple holding three 1D vectors, one for each neuron x, y and z, that hold full information about system's evolution
-    std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> solve(bool saveToFile = false, std::string filename="")
+    void solve(const std::string& filename="")
     {
+        // Creating file for results and writing initial state of the system (n=0)
+        std::ofstream file(filename);
+        if(!file)
+        {
+            std::cerr << "ERROR opening " << filename << '\n';
+            return;
+        }
+        file << "n,x,y,z\n";
+        file << 0 << "," << std::fixed << std::setprecision(9) << x[0] << "," << y[0] << "," << z[0] << '\n';
+
+        // calculating value of gamma function for given 'nu'
         double gammanu = gsl_sf_gamma(wp->nu);
+
+        // Creating variables/objects used for caching repetetive values to avoid ------------------------------------------------------
+        // unnecessary computations
+        
+        /* Since computing gamma functions of large values leads to numeric overflow I will use a trick:
+        * Instead of calculating gamma(a)/gamma(b), where a=n-j+nu, b=n-j+1, one can calculate a natural logarithm of this
+        * fraction using gsl_sf_lngamma: alpha = ln( gamma(a) / gamma(b)) = ln( gamma(a) ) - ln( gamma(b) )
+        * Once the alpha is calculated (which is not supposed to be an enormous number) we can simply exponentiate it 
+        * and get the final result used for further calculations:
+        *
+        * gammafrac = std::exp(alpha) */
+        std::vector<double> gammafrac_cache(n_iter, 0.0);
+        for(int j=1; j<n_iter; j++) {
+            const int n_max = n_iter - 1; // must substract one cuz 'n' is always less than 'n_iter' (look at nested for loops below)
+            
+            double alpha {0.0};
+            alpha = gsl_sf_lngamma(n_max-j+wp->nu) - gsl_sf_lngamma(n_max-j+1);
+            gammafrac_cache[n_max-j] = std::exp(alpha);
+        }
+        std::cout << "gammafrac_cache vector created...\n";
+
+        /* Vectors initialized right below are used to store results of repetitive calculations of this kind:
+            for(int n=1; n<n_iter; n++)    
+                for(int j=1; j<n; j++) {
+                    xnsum += gammafrac * (
+                        -x[j-1] +                       |
+                        wp->w11*std::tanh(x[j-1]) +     |~~~> this is what's getting stored in xjsum_cache[j-1]
+                        wp->w12*std::tanh(y[j-1]) +     |
+                        wp->w13*std::tanh(z[j-1])       |
+                    );
+                }
+        */
+        std::vector<double> xjsum_cache(n_iter, 0.0);
+        std::vector<double> yjsum_cache(n_iter, 0.0);
+        std::vector<double> zjsum_cache(n_iter, 0.0);
+
+        xjsum_cache[0] = -x[0] +
+                    wp->w11*std::tanh(x[0]) +
+                    wp->w12*std::tanh(y[0]) +
+                    wp->w13*std::tanh(z[0]);
+
+        yjsum_cache[0] = -y[0] +
+                    wp->w21*std::tanh(x[0]) +
+                    wp->w22*std::tanh(y[0]) +
+                    wp->w23*std::tanh(z[0]);
+
+        zjsum_cache[0] = -z[0] +
+                    wp->w31*std::tanh(x[0]) +
+                    wp->w32*std::tanh(y[0]) +
+                    wp->w33*std::tanh(z[0]);
 
         for(int n=1; n<n_iter; n++)
         {
@@ -163,63 +224,38 @@ public:
             double znsum {0};
 
             for(int j=1; j<=n; j++)
-            {
-                /* Since computing gamma functions of large values leads to numeric overflow I will use a trick:
-                 * Instead of calculating gamma(a)/gamma(b), where a=n-j+nu, b=n-j+1, one can calculate a natural logarithm of this
-                 * fraction using gsl_sf_lngamma: alpha = ln( gamma(a) / gamma(b)) = ln( gamma(a) ) - ln( gamma(b) )
-                 * Once the alpha is calculated (which is not supposed to be an enormous number) we can simply exponentiate it 
-                 * and get the final result used for further calculations:
-                 *
-                 * gammafrac = std::exp(alpha) */
-                
-                double alpha = gsl_sf_lngamma(n-j+wp->nu) - gsl_sf_lngamma(n-j+1);
-                double gammafrac = std::exp(alpha);
+            {   
+                xnsum += gammafrac_cache[n-j] * xjsum_cache[j-1];
 
-                xnsum += gammafrac * (
-                    -x[j-1] +
-                    wp->w11*std::tanh(x[j-1]) +
-                    wp->w12*std::tanh(y[j-1]) +
-                    wp->w13*std::tanh(z[j-1])
-                );
+                ynsum += gammafrac_cache[n-j] * yjsum_cache[j-1];
 
-                ynsum += gammafrac * (
-                    -y[j-1] +
-                    wp->w21*std::tanh(x[j-1]) +
-                    wp->w22*std::tanh(y[j-1]) +
-                    wp->w23*std::tanh(z[j-1])
-                );
-
-                znsum += gammafrac * (
-                    -z[j-1] +
-                    wp->w31*std::tanh(x[j-1]) +
-                    wp->w32*std::tanh(y[j-1]) +
-                    wp->w33*std::tanh(z[j-1])
-                );
+                znsum += gammafrac_cache[n-j] * zjsum_cache[j-1];
             }
 
+            // Caclulating the next step and writing it to the file
             x[n] = x[0] + xnsum / gammanu;
             y[n] = y[0] + ynsum / gammanu;
             z[n] = z[0] + znsum / gammanu;
+            file << n << "," << std::fixed << std::setprecision(9) << x[n] << "," << y[n] << "," << z[n] << '\n';
 
+            xjsum_cache[n] = -x[n] +
+                    wp->w11*std::tanh(x[n]) +
+                    wp->w12*std::tanh(y[n]) +
+                    wp->w13*std::tanh(z[n]);
+
+            yjsum_cache[n] = -y[n] +
+                    wp->w21*std::tanh(x[n]) +
+                    wp->w22*std::tanh(y[n]) +
+                    wp->w23*std::tanh(z[n]);
+
+            zjsum_cache[n] = -z[n] +
+                    wp->w31*std::tanh(x[n]) +
+                    wp->w32*std::tanh(y[n]) +
+                    wp->w33*std::tanh(z[n]);
         }
+        file.close();
         
-        if(saveToFile == true)
-        {
-            std::ofstream file(filename);
-            if(!file)
-            {
-                std::cerr << "ERROR opening " << filename << '\n';
-                return {{}, {}, {}};
-            }
-            file << "n,x,y,z\n";
-
-            for(int n=0; n<n_iter; ++n)
-                file << n << "," << std::fixed << std::setprecision(9) << x[n] << "," << y[n] << "," << z[n] << '\n';
-
-            file.close();
-        }
-
-        return {x, y, z};
+        return;
     }
 
 /*
@@ -418,7 +454,7 @@ int main(int argc, char* argv[])
     Params wparams(paramsPath);
 
     HopfieldNetwork H(&wparams);
-    H.solve(true, resultPath);
+    H.solve(resultPath);
 
     return 0;
 }

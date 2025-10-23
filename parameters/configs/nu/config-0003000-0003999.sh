@@ -42,7 +42,7 @@ PLOT_TEVOL_TIME="00:30:00"
 
 # PLOT_BIFUR Setup----------------------------------------------
 # Choose the number of iterations to plot for a single value of control parameter
-N_ITER_LAST=1000
+N_ITER_LAST=500
 PLOT_BIFUR_TIME="00:30:00"
 
 # Paths---------------------------------------------------------

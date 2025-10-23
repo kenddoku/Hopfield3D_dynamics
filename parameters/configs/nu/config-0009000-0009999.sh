@@ -32,7 +32,7 @@ CONTROL_PARAM_STEP=0.001
 
 # PERF_TEVOL Setup----------------------------------------------
 # Choose the number of time-evol iterations 
-N_ITER=100000
+N_ITER=150
 # Choose the maximum time of calculations (single proccess) hh:mm:ss
 PERF_TEVOL_TIME="02:00:00"
 
@@ -42,7 +42,7 @@ PLOT_TEVOL_TIME="00:30:00"
 
 # PLOT_BIFUR Setup----------------------------------------------
 # Choose the number of iterations to plot for a single value of control parameter
-N_ITER_LAST=500
+N_ITER_LAST=50
 PLOT_BIFUR_TIME="00:30:00"
 
 # Paths---------------------------------------------------------

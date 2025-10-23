@@ -4,8 +4,8 @@ FILE_CONFIG_ID_LIST="$PROJECT/parameters/configs/config_id_list.txt"
 
 while read -r config_id_low config_id_high; do
     if (( $1 >= config_id_low && $1 <= config_id_high )); then
-        CONFIG_FILE=$(printf "%s/parameters/configs/%s/config-%07g-%07g.sh" \
-            "$PROJECT" "$2" "$config_id_low" "$config_id_high")
+	CONFIG_FILE_NAME=$(printf "config-%07g-%07g.sh" $config_id_low $config_id_high)
+        CONFIG_FILE=$(find "$PROJECT/parameters/configs/" -name "$CONFIG_FILE_NAME")
         number_of_steps=$(( $1 - config_id_low ))
         break
     fi
@@ -22,7 +22,6 @@ CONTROL_PARAM_VAL=$(echo "$CONTROL_PARAM_MIN + $number_of_steps * $CONTROL_PARAM
 CONTROL_PARAM_MAX=$(echo "$CONTROL_PARAM_MIN + $N_CONFIG_SETS * $CONTROL_PARAM_STEP" | bc -l)
 # CONFIGURATION DISPLAY--------------------------------------
 echo "-------------------------------------------------------------------------"
-echo ""
 echo "CONFIG_ID:    $1"
 echo "PART OF:      $CONFIG_FILE"
 echo ""
@@ -43,3 +42,5 @@ echo "CONTROL_PARAM_MIN  =  $CONTROL_PARAM_MIN"
 echo "CONTROL_PARAM_MAX  =  $CONTROL_PARAM_MAX"
 echo "CONTROL_PARAM_STEP =  $CONTROL_PARAM_STEP"
 echo ""
+echo "N_ITER =	$N_ITER"
+echo "N_ITER_LAST =	$N_ITER_LAST"

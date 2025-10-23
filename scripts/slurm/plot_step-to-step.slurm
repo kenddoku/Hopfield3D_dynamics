@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=plot_tevol
+#SBATCH --job-name=plot2step
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --output=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/logs/plot_%A_%a.out
-#SBATCH --error=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/errors/plot_%A_%a.err
+#SBATCH --output=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/logs/plot_step-to-step.out
+#SBATCH --error=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/errors/plot_step-to-step.err
 
 source "$PROJECT/CONFIG.sh"
 
