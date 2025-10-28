@@ -5,12 +5,10 @@ import matplotlib.pyplot as plt
 
 N_ITER = int(sys.argv[1])
 data_path = sys.argv[2]
-x_figure_path = sys.argv[3]
-y_figure_path = sys.argv[4]
-z_figure_path = sys.argv[5]
-graphic_file_extension = sys.argv[6]
-n_iter_init = int(sys.argv[7]) # Initial iteration on x-axis that will get displayed
-n_iter_fin = int(sys.argv[8]) # Final iteratin on x-axis that will get displayed
+xyz_figure_path = sys.argv[3]
+graphic_file_extension = sys.argv[4]
+n_iter_init = int(sys.argv[5])  # Initial iteration on x-axis that will get displayed
+n_iter_fin = int(sys.argv[6])   # Final iteration on x-axis that will get displayed
 
 if not os.path.isfile(data_path):
     print(f"[SKIP] Data was not found in {data_path}")
@@ -29,25 +27,37 @@ y = data[y_col]
 z = data[z_col]
 
 num_ranges = 4
-range_step = (n_iter_fin - n_iter_init + 1) // num_ranges # e.g. 99 - 0 + 1 = 100 (exactly a hundret steps) 
+range_step = (n_iter_fin - n_iter_init + 1) // num_ranges  # e.g. 99 - 0 + 1 = 100
 ranges = [(n_iter_init + i * range_step, n_iter_init + (i+1) * range_step) for i in range(num_ranges)]
 
-def plot_split(variable, var_name, color, output_name):
-    fig, axs = plt.subplots(4, 1, figsize=(12, 16), dpi=150)
+fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)  # 1 row, 3 columns
 
+variables = [(x, x_col, 'red'), (y, y_col, 'green'), (z, z_col, 'blue')]
+
+for ax, (variable, var_name, color) in zip(axs, variables):
     y_min, y_max = variable.min(), variable.max()
 
+    # Divide into 4 ranges and plot
     for i, (start, end) in enumerate(ranges):
-        axs[i].scatter(n[start:end], variable[start:end], s=5, color=color)
-        axs[i].set_title(f"{var_name} [{start}–{end}]")
-        axs[i].set_xlabel(n_col)
-        axs[i].set_ylabel(var_name)
-        axs[i].set_ylim(y_min, y_max)
+        ax.scatter(n[start:end], variable[start:end], s=5, color=color, label=f"[{start}–{end}]")
 
-    plt.tight_layout()
-    plt.savefig(output_name, format=graphic_file_extension)
-    plt.close()
+    ax.set_title(f"{var_name} evolution")
+    ax.set_xlabel(n_col)
+    ax.set_ylabel(var_name)
+    ax.set_ylim(y_min, y_max)
+    ax.legend(fontsize=8, loc='upper right')
 
-plot_split(x, x_col, 'red', x_figure_path)
-plot_split(y, y_col, 'green', y_figure_path)
-plot_split(z, z_col, 'blue', z_figure_path)
+# Optional: global title
+fig.suptitle(f"Time evolution of x, y, z (N_ITER={N_ITER})", fontsize=14)
+
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+# Save combined figure
+if graphic_file_extension == "pdf":
+    fig.savefig(xyz_figure_path, format=graphic_file_extension)
+elif graphic_file_extension == "png":
+    fig.savefig(xyz_figure_path, dpi=300)
+else:
+    print("The graphic file extension is incorrect\n")
+
+plt.close()

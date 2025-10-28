@@ -34,7 +34,7 @@ cat >&3 <<'EOF'
 #SBATCH --job-name=tevol
 #SBATCH --partition plgrid
 #SBATCH --account=plghopkrypt-cpu
-#SBATCH --time=10:00:00
+#SBATCH --time=00:45:00
 #SBATCH --output=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/logs/time-evol_output.out
 #SBATCH --error=/net/pr2/projects/plgrid/plgghopfieldmgr/Masters/errors/time-evol_error.err
 
@@ -43,8 +43,6 @@ source $2
 PERF_TEVOL_PARAM_PATH=$(printf "$PARAMS_DIR/wparams/$CONTROL_PARAM_NAME/wparams_config-%07g.txt" $1)
 PERF_TEVOL_OUTPUT_PATH=$(printf "$DATA_DIR/time-evol/$CONTROL_PARAM_NAME/time-evol_config-%07g.csv" $1)
 
-echo "$2 $PERF_TEVOL_PARAM_PATH $PERF_TEVOL_OUTPUT_PATH"
-
 srun "$SOURCE_CODE_DIR/time-evol" "$PERF_TEVOL_PARAM_PATH" "$PERF_TEVOL_OUTPUT_PATH"
 EOF
 
@@ -52,6 +50,6 @@ exec 3>&-
 
 chmod +x "$slurm_script_path"
 
-sbatch "$slurm_script_path" "$config_id" "$CONFIG_FILE"
+sbatch "$slurm_script_path" "$config_id" "$CONFIG_FILE" >/dev/null
 
 done
